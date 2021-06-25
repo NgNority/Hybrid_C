@@ -84,7 +84,7 @@ static void hands_update_proc(Layer *layer, GContext *ctx)
       .y = (int16_t)(-cos_lookup(minute_angle) * (int32_t)maxLength / TRIG_MAX_RATIO) + center.y,
   };
 
-  int32_t hour_angle = TRIG_MAX_ANGLE * t->tm_hour / 12;
+  int32_t hour_angle = (TRIG_MAX_ANGLE * (((t->tm_hour % 12) * 6) + (t->tm_min / 10))) / (12 * 6);
   GPoint hour_hand = {
       .x = (int16_t)(sin_lookup(hour_angle) * (int32_t)(maxLength * 0.6) / TRIG_MAX_RATIO) + center.x,
       .y = (int16_t)(-cos_lookup(hour_angle) * (int32_t)(maxLength * 0.6) / TRIG_MAX_RATIO) + center.y,
