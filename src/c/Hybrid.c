@@ -40,8 +40,6 @@ static void prv_load_settings() {
 // Save the settings to persistent storage
 static void prv_save_settings() {
   persist_write_data(SETTINGS_KEY, &settings, sizeof(settings));
-
-  
   // Update the display based on new settings
   prv_update_display();
 }
@@ -65,7 +63,6 @@ static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) 
   Tuple *bg_color_t = dict_find(iter, MESSAGE_KEY_BackgroundColor);
   if (bg_color_t) {
     settings.BackgroundColor = GColorFromHEX(bg_color_t->value->int32);
-    //printf("%d", GColorFromHEX(bg_color_t->value->int32));
   }
   // Animations
   Tuple *animations_t = dict_find(iter, MESSAGE_KEY_batteryBar);
