@@ -1,4 +1,6 @@
 #include <pebble.h>
+#include <inttypes.h>
+#include "main.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -18,6 +20,81 @@ static char s_buffer[8];
 static char s_num_buffer[4];
 
 static int s_battery_level;
+
+bool isWhite = false;
+
+// A struct for our specific settings (see main.h)
+ClaySettings settings;
+
+// Initialize the default settings
+static void prv_default_settings() {
+  settings.BackgroundColor = GColorBlack;
+  settings.batteryBar = true;
+}
+
+// Read settings from persistent storage
+static void prv_load_settings() {
+  // Load the default settings
+  prv_default_settings();
+  // Read settings from persistent storage, if they exist
+  persist_read_data(SETTINGS_KEY, &settings, sizeof(settings));
+}
+
+// Save the settings to persistent storage
+static void prv_save_settings() {
+  persist_write_data(SETTINGS_KEY, &settings, sizeof(settings));
+  // Update the display based on new settings
+  prv_update_display();
+}
+
+// Update the display elements
+static void prv_update_display() {
+  // Background color
+  window_set_background_color(s_main_window, settings.BackgroundColor);
+
+  // Seconds
+  if (settings.batteryBar) {
+    layer_set_hidden(s_battery_layer, false);
+  } else {
+    layer_set_hidden(s_battery_layer, true);
+  }
+}
+
+// Handle the response from AppMessage
+static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) {
+ // Background Color
+  Tuple *bg_color_t = dict_find(iter, MESSAGE_KEY_BackgroundColor);
+  if (bg_color_t) {
+    settings.BackgroundColor = GColorFromHEX(bg_color_t->value->int32);
+    printf("%03" PRId32 "\n", bg_color_t->value->int32);
+    // 000 is Black
+    // 11184810 is gray
+    // 16777215 is white
+    if(bg_color_t->value->int32 == 16777215){
+      // This is if its white
+      isWhite = true;
+      text_layer_set_text_color(s_weather_layer, GColorBlack);
+      text_layer_set_text_color(s_time_layer, GColorBlack);
+      text_layer_set_text_color(s_num_label, GColorBlack);
+    }else {
+      //This is for gray and black
+      isWhite = false;
+      text_layer_set_text_color(s_weather_layer, GColorWhite);
+      text_layer_set_text_color(s_time_layer, GColorWhite);
+      text_layer_set_text_color(s_num_label, GColorWhite);
+
+    }
+
+  }
+  // Animations
+  Tuple *animations_t = dict_find(iter, MESSAGE_KEY_batteryBar);
+  if (animations_t) {
+    settings.batteryBar = animations_t->value->int32 == 1;
+  }
+
+  // Save the new settings to persistent storage
+  prv_save_settings();
+}
 
 // Declare globally
 //static GFont s_time_font;
@@ -60,7 +137,11 @@ static void canvas_update_proc(Layer *layer, GContext *ctx)
   GRect markRight_bounds = GRect(120, 84, 24, 2);
   GRect markLeft_bounds = GRect(0, 84, 24, 2);
 
-  graphics_context_set_stroke_color(ctx, GColorWhite);
+  if(isWhite){
+    graphics_context_set_stroke_color(ctx, GColorBlack);
+  }else {
+    graphics_context_set_stroke_color(ctx, GColorWhite);
+  }
   graphics_draw_rect(ctx, markTop_bounds);
   graphics_draw_rect(ctx, markRight_bounds);
   graphics_draw_rect(ctx, markBottom_bounds);
@@ -90,7 +171,12 @@ static void hands_update_proc(Layer *layer, GContext *ctx)
       .y = (int16_t)(-cos_lookup(hour_angle) * (int32_t)(maxLength * 0.6) / TRIG_MAX_RATIO) + center.y,
   };
 
-  graphics_context_set_stroke_color(ctx, GColorWhite);
+  if(isWhite){
+    graphics_context_set_stroke_color(ctx, GColorBlack);
+  }else {
+    graphics_context_set_stroke_color(ctx, GColorWhite);
+  }
+  
   graphics_context_set_stroke_width(ctx, 4);
 
   graphics_draw_line(ctx, minute_hand, center);
@@ -114,15 +200,20 @@ static void battery_update_proc(Layer *layer, GContext *ctx)
   int width = (s_battery_level * 70) / 100;
 
   // Draw the background
-  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_context_set_fill_color(ctx, GColorLightGray);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
   // Draw the bar
-  graphics_context_set_fill_color(ctx, GColorWhite);
+  if(isWhite){
+    graphics_context_set_fill_color(ctx, GColorBlack);
+  }else {
+    graphics_context_set_fill_color(ctx, GColorWhite);
+  }
+  
   graphics_fill_rect(ctx, GRect(0, 0, width, bounds.size.h), 0, GCornerNone);
 }
 
-static void main_window_load(Window *window)
+static void prv_window_load(Window *window)
 {
   // Get information about the Window
   Layer *window_layer = window_get_root_layer(window);
@@ -166,7 +257,7 @@ static void main_window_load(Window *window)
   s_num_label = text_layer_create(
       GRect(0, PBL_IF_ROUND_ELSE(58, 72), 195, 50));
   text_layer_set_text(s_num_label, s_num_buffer);
-  text_layer_set_background_color(s_num_label, GColorBlack);
+  text_layer_set_background_color(s_num_label, GColorClear);
   text_layer_set_text_color(s_num_label, GColorWhite);
   text_layer_set_font(s_num_label, fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS));
   text_layer_set_text_alignment(s_num_label, GTextAlignmentCenter);
@@ -195,9 +286,11 @@ static void main_window_load(Window *window)
 
   // Add to Window
   layer_add_child(window_get_root_layer(window), s_canvas_layer);
+  prv_update_display();
+  printf("%s", settings.batteryBar ? "true" : "false");
 }
 
-static void main_window_unload(Window *window)
+static void prv_window_unload(Window *window)
 {
   // Destroy TextLayer
   layer_destroy(s_battery_layer);
@@ -275,20 +368,21 @@ static void battery_callback(BatteryChargeState state)
   layer_mark_dirty(s_battery_layer);
 }
 
-static void init()
+static void prv_init()
 {
+  prv_load_settings();
   // Create main Window element and assign to pointer
   s_main_window = window_create();
 
   // Set handlers to manage the elements inside the Window
   window_set_window_handlers(s_main_window, (WindowHandlers){
-                                                .load = main_window_load,
-                                                .unload = main_window_unload});
+                                                .load = prv_window_load,
+                                                .unload = prv_window_unload});
 
   // Show the Window on the watch, with animated=true
   window_stack_push(s_main_window, true);
 
-  window_set_background_color(s_main_window, GColorBlack);
+  //window_set_background_color(s_main_window, GColorBlack);
 
   // Register with TickTimerService
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
@@ -303,6 +397,9 @@ static void init()
   app_message_register_outbox_failed(outbox_failed_callback);
   app_message_register_outbox_sent(outbox_sent_callback);
 
+    // Open AppMessage connection
+  app_message_register_inbox_received(prv_inbox_received_handler);
+  app_message_open(128, 128);
   // Register for battery level updates
   battery_state_service_subscribe(battery_callback);
 
@@ -313,7 +410,7 @@ battery_callback(battery_state_service_peek());
   update_time();
 }
 
-static void deinit()
+static void prv_deinit()
 {
   // Destroy Window
   tick_timer_service_unsubscribe();
@@ -322,7 +419,7 @@ static void deinit()
 
 int main(void)
 {
-  init();
+  prv_init();
   app_event_loop();
-  deinit();
+  prv_deinit();
 }

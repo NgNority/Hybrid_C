@@ -1,61 +1,45 @@
 module.exports = [
-    {
-      "type": "heading",
-      "defaultValue": "Hybrid"
-    },
-  
-    {
-      "type": "section",
-      "items": [
-        {
-          "type": "heading",
-          "defaultValue": "Dial colors"
-        },
-  
-        {
+  {
+    "type": "heading",
+    "defaultValue": "App Configuration"
+  },
+  {
+    "type": "text",
+    "defaultValue": "Here is some introductory text."
+  },
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": "Colors"
+      },
+      {
         "type": "color",
-        "messageKey": "colorBackground",
-        "defaultValue": "000000",
-        "label": "Background",
-        "allowGray": "true",
-        },
-  
-        {
-          "type": "color",
-          "messageKey": "logoColor",
-          "defaultValue": "aaaaaa",
-          "label": "Pebble logo",
-        },
-      ]
-    },
-  
-    {
-      "type": "section",
-      "items": [
-        {
-          "type": "heading",
-          "defaultValue": "Features"
-        },
-  
-        {
+        "messageKey": "BackgroundColor",
+        "defaultValue": "0x000000",
+        "label": "Background Color",
+        "allowGray": true
+      },
+    ]
+  },
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": "More Settings"
+      },
+      {
         "type": "toggle",
-        "messageKey": "enableSecondHand",
-        "defaultValue": "true",
-        "label": "Show second hand",
-        "description": "Uses more battery"
-        },
-  
-        {
-          "type": "toggle",
-          "messageKey": "enableVibrateOnDisconnect",
-          "defaultValue": "true",
-          "label": "Vibrate on disconnect",
-          },
-      ]
-    },
-  
-    {
-      "type": "submit",
-      "defaultValue": "Save Settings"
-    }
-  ];
+        "messageKey": "batteryBar",
+        "label": "Enable battery Bar",
+        "defaultValue": true
+      }
+    ]
+  },
+  {
+    "type": "submit",
+    "defaultValue": "Save Settings"
+  }
+];
