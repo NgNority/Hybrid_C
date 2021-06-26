@@ -1,0 +1,40 @@
+{
+  "name": "Hybrid",
+  "author": "NgNority",
+  "version": "1.0.0",
+  "keywords": [
+    "pebble-app"
+  ],
+  "private": true,
+  "dependencies": {
+    "pebble-clay": "^1.0.4"
+  },
+  "pebble": {
+    "displayName": "Hybrid",
+    "uuid": "7dc7f474-4732-4471-9dfa-cd3c8429ecc6",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "chalk",
+      "diorite"
+    ],
+    "capabilities": [
+      "location",
+      "configurable"
+    ],
+    "watchapp": {
+      "watchface": true
+    },
+    "messageKeys": [
+      "TEMPERATURE",
+      "CONDITIONS",
+      "BackgroundColor",
+      "batteryBar"
+    ],
+    "resources": {
+      "media": []
+    }
+  }
+}

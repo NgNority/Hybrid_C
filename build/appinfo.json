@@ -1,0 +1,39 @@
+{
+    "targetPlatforms": [
+        "aplite", 
+        "basalt", 
+        "chalk", 
+        "diorite"
+    ], 
+    "displayName": "Hybrid", 
+    "name": "Hybrid", 
+    "messageKeys": {
+        "batteryBar": 10003, 
+        "CONDITIONS": 10001, 
+        "TEMPERATURE": 10000, 
+        "BackgroundColor": 10002
+    }, 
+    "companyName": "NgNority", 
+    "enableMultiJS": true, 
+    "versionLabel": "1.0", 
+    "capabilities": [
+        "location", 
+        "configurable"
+    ], 
+    "sdkVersion": "3", 
+    "appKeys": {
+        "batteryBar": 10003, 
+        "CONDITIONS": 10001, 
+        "TEMPERATURE": 10000, 
+        "BackgroundColor": 10002
+    }, 
+    "longName": "Hybrid", 
+    "shortName": "Hybrid", 
+    "watchapp": {
+        "watchface": true
+    }, 
+    "resources": {
+        "media": []
+    }, 
+    "uuid": "7dc7f474-4732-4471-9dfa-cd3c8429ecc6"
+}
