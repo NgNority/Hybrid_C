@@ -33,8 +33,24 @@ module.exports = [
       {
         "type": "toggle",
         "messageKey": "batteryBar",
-        "label": "Enable battery Bar",
+        "label": "Enable battery bar",
         "defaultValue": true
+      },
+      {
+        "type": "toggle",
+        "messageKey": "weatherDisplay",
+        "label": "Enable weather",
+        "defaultValue": true
+      },
+      {
+        "type": "slider",
+        "messageKey": "handLength",
+        "defaultValue": 15,
+        "label": "Hand Length",
+        "description": "Use this slider to adjust the length of the hands",
+        "min": 1,
+        "max": 10,
+        "step": 1
       }
     ]
   },

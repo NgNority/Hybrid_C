@@ -27,13 +27,17 @@ bool isWhite = false;
 ClaySettings settings;
 
 // Initialize the default settings
-static void prv_default_settings() {
+static void prv_default_settings()
+{
   settings.BackgroundColor = GColorBlack;
   settings.batteryBar = true;
+  settings.weatherDisplay = true;
+  settings.handLength = 10;
 }
 
 // Read settings from persistent storage
-static void prv_load_settings() {
+static void prv_load_settings()
+{
   // Load the default settings
   prv_default_settings();
   // Read settings from persistent storage, if they exist
@@ -41,56 +45,112 @@ static void prv_load_settings() {
 }
 
 // Save the settings to persistent storage
-static void prv_save_settings() {
+static void prv_save_settings()
+{
   persist_write_data(SETTINGS_KEY, &settings, sizeof(settings));
   // Update the display based on new settings
   prv_update_display();
 }
 
 // Update the display elements
-static void prv_update_display() {
+static void prv_update_display()
+{
   // Background color
   window_set_background_color(s_main_window, settings.BackgroundColor);
 
   // Seconds
-  if (settings.batteryBar) {
+  if (settings.batteryBar)
+  {
     layer_set_hidden(s_battery_layer, false);
-  } else {
+  }
+  else
+  {
     layer_set_hidden(s_battery_layer, true);
+  }
+
+    // Seconds
+  if (settings.weatherDisplay)
+  {
+    layer_set_hidden((Layer *)s_weather_layer, false);
+  }
+  else
+  {
+    layer_set_hidden((Layer *)s_weather_layer, true);
   }
 }
 
 // Handle the response from AppMessage
-static void prv_inbox_received_handler(DictionaryIterator *iter, void *context) {
- // Background Color
+static void prv_inbox_received_handler(DictionaryIterator *iter, void *context)
+{
+  // Background Color
   Tuple *bg_color_t = dict_find(iter, MESSAGE_KEY_BackgroundColor);
-  if (bg_color_t) {
+  if (bg_color_t)
+  {
     settings.BackgroundColor = GColorFromHEX(bg_color_t->value->int32);
     printf("%03" PRId32 "\n", bg_color_t->value->int32);
     // 000 is Black
     // 11184810 is gray
     // 16777215 is white
-    if(bg_color_t->value->int32 == 16777215){
+    if (bg_color_t->value->int32 == 16777215)
+    {
       // This is if its white
       isWhite = true;
       text_layer_set_text_color(s_weather_layer, GColorBlack);
       text_layer_set_text_color(s_time_layer, GColorBlack);
       text_layer_set_text_color(s_num_label, GColorBlack);
-    }else {
+    }
+    else
+    {
       //This is for gray and black
       isWhite = false;
       text_layer_set_text_color(s_weather_layer, GColorWhite);
       text_layer_set_text_color(s_time_layer, GColorWhite);
       text_layer_set_text_color(s_num_label, GColorWhite);
-
     }
-
   }
   // Animations
   Tuple *animations_t = dict_find(iter, MESSAGE_KEY_batteryBar);
-  if (animations_t) {
+  if (animations_t)
+  {
     settings.batteryBar = animations_t->value->int32 == 1;
   }
+
+   // Animations
+  Tuple *weatherDisplay_t = dict_find(iter, MESSAGE_KEY_weatherDisplay);
+  if (weatherDisplay_t)
+  {
+    settings.weatherDisplay = weatherDisplay_t->value->int32 == 1;
+  }
+
+     // Animations
+  Tuple *handLength_t = dict_find(iter, MESSAGE_KEY_handLength);
+  if (handLength_t)
+  {
+    settings.handLength = (handLength_t->value->int32) * 10;
+  }
+
+
+  //weather stuff
+  // Store incoming information
+  static char temperature_buffer[8];
+  static char conditions_buffer[32];
+  static char weather_layer_buffer[32];
+
+  // Read tuples for data
+  Tuple *temp_tuple = dict_find(iter, MESSAGE_KEY_TEMPERATURE);
+  Tuple *conditions_tuple = dict_find(iter, MESSAGE_KEY_CONDITIONS);
+
+  // If all data is available, use it
+  if (temp_tuple && conditions_tuple)
+  {
+    snprintf(temperature_buffer, sizeof(temperature_buffer), "%dC", (int)temp_tuple->value->int32);
+    snprintf(conditions_buffer, sizeof(conditions_buffer), "%s", conditions_tuple->value->cstring);
+  }
+
+  // Assemble full string and display
+  snprintf(weather_layer_buffer, sizeof(weather_layer_buffer), "%s, %s", temperature_buffer, conditions_buffer);
+  printf("Weather C Fuction output: %s", weather_layer_buffer);
+  text_layer_set_text(s_weather_layer, weather_layer_buffer);
 
   // Save the new settings to persistent storage
   prv_save_settings();
@@ -137,9 +197,12 @@ static void canvas_update_proc(Layer *layer, GContext *ctx)
   GRect markRight_bounds = GRect(120, 84, 24, 2);
   GRect markLeft_bounds = GRect(0, 84, 24, 2);
 
-  if(isWhite){
+  if (isWhite)
+  {
     graphics_context_set_stroke_color(ctx, GColorBlack);
-  }else {
+  }
+  else
+  {
     graphics_context_set_stroke_color(ctx, GColorWhite);
   }
   graphics_draw_rect(ctx, markTop_bounds);
@@ -153,7 +216,7 @@ static void hands_update_proc(Layer *layer, GContext *ctx)
   GRect bounds = layer_get_bounds(layer);
   GPoint center = grect_center_point(&bounds);
 
-  const int16_t second_hand_length = PBL_IF_ROUND_ELSE((bounds.size.w / 2) - 19, bounds.size.w / 2);
+  //const int16_t second_hand_length = PBL_IF_ROUND_ELSE((bounds.size.w / 2) - 19, bounds.size.w / 2);
   int16_t maxLength = (MIN(bounds.size.w, bounds.size.h) - 20) / 2;
 
   time_t now = time(NULL);
@@ -161,22 +224,25 @@ static void hands_update_proc(Layer *layer, GContext *ctx)
 
   int32_t minute_angle = TRIG_MAX_ANGLE * t->tm_min / 60;
   GPoint minute_hand = {
-      .x = (int16_t)(sin_lookup(minute_angle) * (int32_t)maxLength / TRIG_MAX_RATIO) + center.x,
-      .y = (int16_t)(-cos_lookup(minute_angle) * (int32_t)maxLength / TRIG_MAX_RATIO) + center.y,
+      .x = (int16_t)(sin_lookup(minute_angle) * settings.handLength / TRIG_MAX_RATIO) + center.x,
+      .y = (int16_t)(-cos_lookup(minute_angle) * settings.handLength / TRIG_MAX_RATIO) + center.y,
   };
 
   int32_t hour_angle = (TRIG_MAX_ANGLE * (((t->tm_hour % 12) * 6) + (t->tm_min / 10))) / (12 * 6);
   GPoint hour_hand = {
-      .x = (int16_t)(sin_lookup(hour_angle) * (int32_t)(maxLength * 0.6) / TRIG_MAX_RATIO) + center.x,
-      .y = (int16_t)(-cos_lookup(hour_angle) * (int32_t)(maxLength * 0.6) / TRIG_MAX_RATIO) + center.y,
+      .x = (int16_t)(sin_lookup(hour_angle) * (settings.handLength * 0.6) / TRIG_MAX_RATIO) + center.x,
+      .y = (int16_t)(-cos_lookup(hour_angle) * (settings.handLength * 0.6) / TRIG_MAX_RATIO) + center.y,
   };
 
-  if(isWhite){
+  if (isWhite)
+  {
     graphics_context_set_stroke_color(ctx, GColorBlack);
-  }else {
+  }
+  else
+  {
     graphics_context_set_stroke_color(ctx, GColorWhite);
   }
-  
+
   graphics_context_set_stroke_width(ctx, 4);
 
   graphics_draw_line(ctx, minute_hand, center);
@@ -204,12 +270,15 @@ static void battery_update_proc(Layer *layer, GContext *ctx)
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
   // Draw the bar
-  if(isWhite){
+  if (isWhite)
+  {
     graphics_context_set_fill_color(ctx, GColorBlack);
-  }else {
+  }
+  else
+  {
     graphics_context_set_fill_color(ctx, GColorWhite);
   }
-  
+
   graphics_fill_rect(ctx, GRect(0, 0, width, bounds.size.h), 0, GCornerNone);
 }
 
@@ -241,7 +310,7 @@ static void prv_window_load(Window *window)
   text_layer_set_background_color(s_weather_layer, GColorClear);
   text_layer_set_text_color(s_weather_layer, GColorWhite);
   text_layer_set_text_alignment(s_weather_layer, GTextAlignmentCenter);
-  text_layer_set_text(s_weather_layer, "Loading...");
+  text_layer_set_text(s_weather_layer, "");
 
   // Create GFont
   //s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_LECO_20));
@@ -321,30 +390,6 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed)
   layer_mark_dirty(s_hands_layer);
 }
 
-//Getting tempurature stuff
-static void inbox_received_callback(DictionaryIterator *iterator, void *context)
-{
-  // Store incoming information
-  static char temperature_buffer[8];
-  static char conditions_buffer[32];
-  static char weather_layer_buffer[32];
-
-  // Read tuples for data
-  Tuple *temp_tuple = dict_find(iterator, MESSAGE_KEY_TEMPERATURE);
-  Tuple *conditions_tuple = dict_find(iterator, MESSAGE_KEY_CONDITIONS);
-
-  // If all data is available, use it
-  if (temp_tuple && conditions_tuple)
-  {
-    snprintf(temperature_buffer, sizeof(temperature_buffer), "%dC", (int)temp_tuple->value->int32);
-    snprintf(conditions_buffer, sizeof(conditions_buffer), "%s", conditions_tuple->value->cstring);
-  }
-
-  // Assemble full string and display
-  snprintf(weather_layer_buffer, sizeof(weather_layer_buffer), "%s, %s", temperature_buffer, conditions_buffer);
-  text_layer_set_text(s_weather_layer, weather_layer_buffer);
-}
-
 static void inbox_dropped_callback(AppMessageResult reason, void *context)
 {
   APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped!");
@@ -387,8 +432,6 @@ static void prv_init()
   // Register with TickTimerService
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 
-  // Register callbacks
-  app_message_register_inbox_received(inbox_received_callback);
   // Open AppMessage
   const int inbox_size = 128;
   const int outbox_size = 128;
@@ -397,14 +440,14 @@ static void prv_init()
   app_message_register_outbox_failed(outbox_failed_callback);
   app_message_register_outbox_sent(outbox_sent_callback);
 
-    // Open AppMessage connection
+  // Open AppMessage connection
   app_message_register_inbox_received(prv_inbox_received_handler);
   app_message_open(128, 128);
   // Register for battery level updates
   battery_state_service_subscribe(battery_callback);
 
   // Ensure battery level is displayed from the start
-battery_callback(battery_state_service_peek());
+  battery_callback(battery_state_service_peek());
 
   // Make sure the time is displayed from the start
   update_time();

@@ -7,6 +7,8 @@
 typedef struct ClaySettings {
   GColor BackgroundColor;
   bool batteryBar;
+  bool weatherDisplay;
+  int handLength;
 } __attribute__((__packed__)) ClaySettings;
 
 static void prv_default_settings();
